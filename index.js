@@ -6,6 +6,10 @@ const { promisify } = require('util');
 
 // The fs.readFile function, which would normally take a callback, can now be used with promises. 
 // This allows you to use readFileAsync with async/await or with promise methods instead of callbacks. 
+// Originally, fs.readFile follows the callback pattern, that is, it takes a callback as an argument 
+//     that is executed when the read operation is completed.
+// By passing fs.readFile to promisify, we get a new readFileAsync function that returns a Promise instead 
+//    of requiring a callback. This allows you to use async/await to handle file reading more easily.
 const readFileAsync = promisify(fs.readFile);
 const writeFileAsync = promisify(fs.writeFile);
 
@@ -100,18 +104,29 @@ fs.createReadStream(CSV_PATH)
       // Load the template as a zip file
       // The .docx format is a compressed file that contains several internal files and directories that
       //     make up the Word document. These files and directories are structured according to the 
-      //    Open Packaging Conventions (OPC) standard, which is a zip file-based format. 
-      //    For this reason, JSZip is used to load the content of the file, decompressing it and allowing 
-      //    access to the internal files, such as the document content, styles, images, etc.
+      //     Open Packaging Conventions (OPC) standard, which is a zip file-based format. 
+      //    For this reason, JSZip is used to load the content of the file (in binary format), decompressing it and allowing 
+      //       access to the internal files, such as the document content, styles, images, etc.
       const zip = await JSZip.loadAsync(templateContent);
 
       // Loads the contents of the document.xml file found inside the unzipped .docx file into a .docx file; 
       //    document.xml is the file that contains the main content of the document, including text, styles, 
       //    and other formatting elements.
+      // The async method in JSZipObject is used to get the contents of a file inside the ZIP in the specified
+      //     format asynchronously.
       let docContent = await zip.file('word/document.xml').async('string');
 
-      // Replace {BUDGET-NUMBER} with the value from the CSV data
+
+      // The statement creates a text string representing a section of text in a Word document that will
+      //     be bold and contain the value of data['BUDGET-NUMBER'].
+      // <w:r>: Represents a "run" in Word Processing Markup Language (WordprocessingML). 
+      //    A "run" is a sequence of characters that share the same properties.
+      // <w:rPr>: Contains the "run" properties.
+      // <w:b/> : Indicates that the text inside the "run" should be bold.
+      // <w:t>  : Represents the literal text. This is where the actual content, data['BUDGET-NUMBER'], 
+      //            is inserted.
       const budgetNumber = `<w:r><w:rPr><w:b/></w:rPr><w:t>${data['BUDGET-NUMBER']}</w:t></w:r>`;
+      // Replace {BUDGET-NUMBER} with the value from the CSV data
       docContent = docContent.replace('{BUDGET-NUMBER}', budgetNumber);
       
       // Replace {DATE} with the current date in DD-MM-YYYY format
