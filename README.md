@@ -15,6 +15,7 @@ ___
 
 * NodeJS
 * JavaScript
+* jszip
 
 ___
 
